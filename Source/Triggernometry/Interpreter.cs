@@ -53,7 +53,7 @@ namespace Triggernometry
                             break;
                         case SymbolKind.Local:
                             var localSymbol = ((ILocalSymbol)symbol);
-                            type = localSymbol.Type;                            
+                            type = localSymbol.Type;
                             break;
                         default:
                             continue;
@@ -89,7 +89,7 @@ namespace Triggernometry
                 var props = srn.DescendantNodes().OfType<PropertyDeclarationSyntax>();
                 foreach (var prop in props)
                 {
-                    IPropertySymbol symbol = model.GetDeclaredSymbol(prop) as IPropertySymbol;                    
+                    IPropertySymbol symbol = model.GetDeclaredSymbol(prop) as IPropertySymbol;
                     string name = symbol.Type.ContainingAssembly.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
                     if (IsBadApi(name, badApis) == true)
                     {
@@ -141,7 +141,7 @@ namespace Triggernometry
             {
                 Action a = new Action();
                 a._PlaySoundFileExpression = uri;
-                CurrentContext.soundhook(CurrentContext, a);                
+                CurrentContext.soundhook(CurrentContext, a);
             }
 
             public string EvaluateStringExpression(string expr)
@@ -270,11 +270,35 @@ namespace Triggernometry
             _plug = plug;
             _so = ScriptOptions.Default;
             var asms = AppDomain.CurrentDomain.GetAssemblies();
+            bool foundMatcha = false;
+            int excludeDepth = 0;
+            bool excluded = false;
             foreach (Assembly asm in asms)
             {
-                if (asm.FullName.Contains("Cafe.Matcha"))
+                //Found and exclude Matcha and module genrated by ConfuserEx (otherwise it will break Interpreter)
                 {
-                    continue;
+                    if (!foundMatcha && asm.FullName.Contains("Cafe.Matcha"))
+                    {
+                        foundMatcha = true;
+                        continue;
+                    }
+                    if (foundMatcha && !excluded)
+                    {
+                        var asmName = asm.GetName();
+                        if (asmName.Version.ToString().Equals("0.0.0.0") && !asmName.Name.Any(character => character.Equals('.') || character.Equals("-")))
+                        {
+                            excluded = true;
+                            continue;
+                        }
+                        else
+                        {
+                            excludeDepth++;
+                            if (excludeDepth == 5)
+                            {
+                                excluded = true;
+                            }
+                        }
+                    }
                 }
                 try
                 {
@@ -350,7 +374,7 @@ namespace Triggernometry
                 else
                 {
                     g.TriggernometryHelpers.Log(
-                        RealPlugin.DebugLevelEnum.Error, 
+                        RealPlugin.DebugLevelEnum.Error,
                         I18n.Translate(
                             "internal/scriptblocked", "Script execution on trigger {0} blocked due to restricted APIs",
                             (ctx != null && ctx.trig != null) ? ctx.trig.LogName : "(null)"
@@ -361,7 +385,7 @@ namespace Triggernometry
             else
             {
                 Task<object> t = CSharpScript.EvaluateAsync(command, _myso, g, typeof(Globs));
-                Task.Run(async() => { await t; }).Wait();
+                Task.Run(async () => { await t; }).Wait();
             }
         }
 
