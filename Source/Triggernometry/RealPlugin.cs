@@ -532,6 +532,7 @@ namespace Triggernometry
         internal Dictionary<string, Forms.AuraContainerForm> textauras;
         internal bool DisableLogging;
         internal ObsController _obs = null;
+        internal LiveSplitController _livesplit = null;
         internal CancellationTokenSource cts = null;
         internal object ctslock = new object();
         public Form mainform { get; set; }
@@ -2188,6 +2189,7 @@ namespace Triggernometry
                 AuraUpdateThread.Name = "AuraUpdateThread";
                 AuraUpdateThread.Start();
                 _obs = new ObsController();
+                _livesplit = new LiveSplitController();
                 exwhere = I18n.Translate("internal/Plugin/iniscripting", "setting up scripting - try changing the plugin load order in ACT");
                 try
                 {
@@ -2810,6 +2812,11 @@ namespace Triggernometry
             {
                 _obs.Dispose();
                 _obs = null;
+            }
+            if (_livesplit != null)
+            {
+                _livesplit.Dispose();
+                _livesplit = null;
             }
             if (ExitEvent != null)
             {
