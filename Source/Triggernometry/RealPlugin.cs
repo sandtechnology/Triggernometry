@@ -697,6 +697,12 @@ namespace Triggernometry
                         sc.DeactivateRegex(ax, Scarborough.Scarborough.ItemAction.ItemTypeEnum.Image);
                     }
                     break;
+                case Action.AuraOpEnum.DeactivateAuraTrigger:
+                    {
+                        FilteredAddToLog(DebugLevelEnum.Info, I18n.Translate("internal/Plugin/deactimageauratrig", "Deactivating image auras from trigger '{0}' ({1})", ctx.trig.LogName, ctx.trig.Id));
+                        sc.DeactivateTrigger(ctx.trig, Scarborough.Scarborough.ItemAction.ItemTypeEnum.Image);
+                    }
+                    break;
             }
         }
 
@@ -844,6 +850,21 @@ namespace Triggernometry
                         }
                     }
                     break;
+                case Action.AuraOpEnum.DeactivateAuraTrigger:
+                    {
+                        FilteredAddToLog(DebugLevelEnum.Info, I18n.Translate("internal/Plugin/deactimageauratrig", "Deactivating image auras from trigger '{0}' ({1})", ctx.trig.LogName, ctx.trig.Id));
+                        List<string> toRem = new List<string>();
+                        lock (ctx.plug.imageauras)
+                        {
+                            toRem.AddRange(from sx in ctx.plug.imageauras where sx.Value.ctx.trig == ctx.trig select sx.Key);
+                            foreach (string rem in toRem)
+                            {
+                                Forms.AuraContainerForm acf = ctx.plug.imageauras[rem];
+                                acf.AuraDeactivate();
+                            }
+                        }
+                    }
+                    break;
             }
         }
 
@@ -929,6 +950,12 @@ namespace Triggernometry
                         string ax = a._TextAuraName;
                         FilteredAddToLog(DebugLevelEnum.Info, I18n.Translate("internal/Plugin/deacttextaurarex", "Deactivating text auras matching '{0}'", ax));
                         sc.DeactivateRegex(ax, Scarborough.Scarborough.ItemAction.ItemTypeEnum.Text);
+                    }
+                    break;
+                case Action.AuraOpEnum.DeactivateAuraTrigger:
+                    {
+                        FilteredAddToLog(DebugLevelEnum.Info, I18n.Translate("internal/Plugin/deacttextauratrig", "Deactivating text auras from trigger '{0}' ({1})", ctx.trig.LogName, ctx.trig.Id));
+                        sc.DeactivateTrigger(ctx.trig, Scarborough.Scarborough.ItemAction.ItemTypeEnum.Text);
                     }
                     break;
             }
@@ -1130,6 +1157,21 @@ namespace Triggernometry
                         lock (ctx.plug.textauras)
                         {
                             toRem.AddRange(from sx in ctx.plug.textauras where rex.IsMatch(sx.Key) select sx.Key);
+                            foreach (string rem in toRem)
+                            {
+                                Forms.AuraContainerForm acf = ctx.plug.textauras[rem];
+                                acf.AuraDeactivate();
+                            }
+                        }
+                    }
+                    break;
+                case Action.AuraOpEnum.DeactivateAuraTrigger:
+                    {
+                        FilteredAddToLog(DebugLevelEnum.Info, I18n.Translate("internal/Plugin/deacttextauratrig", "Deactivating text auras from trigger '{0}' ({1})", ctx.trig.LogName, ctx.trig.Id));
+                        List<string> toRem = new List<string>();
+                        lock (ctx.plug.textauras)
+                        {
+                            toRem.AddRange(from sx in ctx.plug.textauras where sx.Value.ctx.trig == ctx.trig select sx.Key);
                             foreach (string rem in toRem)
                             {
                                 Forms.AuraContainerForm acf = ctx.plug.textauras[rem];
@@ -1399,6 +1441,18 @@ namespace Triggernometry
             }
         }
 
+        internal void RemoveAurasFromTrigger(Trigger t)
+        {
+            Context fakectx = new Context();
+            fakectx.plug = this;
+            fakectx.trig = t;
+            Action a = new Action();
+            a._AuraOp = Action.AuraOpEnum.DeactivateAuraTrigger;
+            a._TextAuraOp = Action.AuraOpEnum.DeactivateAuraTrigger;
+            ImageAuraManagement(fakectx, a);
+            TextAuraManagement(fakectx, a);
+        }
+
         internal void TriggerDisabled(Trigger t)
         {
             switch (t._Source)
@@ -1409,6 +1463,7 @@ namespace Triggernometry
                         if (ActiveTextTriggers.Contains(t) == true)
                         {
                             FilteredAddToLog(DebugLevelEnum.Verbose, I18n.Translate("internal/Plugin/trigrembook", "Trigger '{0}' removed from bookkeeping", t.LogName));
+                            RemoveAurasFromTrigger(t);
                             ActiveTextTriggers.Remove(t);
                             return;
                         }
@@ -1420,6 +1475,7 @@ namespace Triggernometry
                         if (ActiveFFXIVNetworkTriggers.Contains(t) == true)
                         {
                             FilteredAddToLog(DebugLevelEnum.Verbose, I18n.Translate("internal/Plugin/trigrembook", "Trigger '{0}' removed from bookkeeping", t.LogName));
+                            RemoveAurasFromTrigger(t);
                             ActiveFFXIVNetworkTriggers.Remove(t);
                             return;
                         }
@@ -1431,12 +1487,14 @@ namespace Triggernometry
                         if (ActiveACTTriggers.Contains(t) == true)
                         {
                             FilteredAddToLog(DebugLevelEnum.Verbose, I18n.Translate("internal/Plugin/trigrembook", "Trigger '{0}' removed from bookkeeping", t.LogName));
+                            RemoveAurasFromTrigger(t);
                             ActiveACTTriggers.Remove(t);
                             return;
                         }
                     }
                     break;
                 case Trigger.TriggerSourceEnum.None:
+                    RemoveAurasFromTrigger(t);
                     break;
             }
         }
@@ -1670,7 +1728,7 @@ namespace Triggernometry
                     a.players.Add(mywmp);
                 }
                 mywmp.MediaError += a.Mywmp_MediaError;
-                mywmp.PlayStateChange += a.Mywmp_PlayStateChange;
+                mywmp.PlayStateChange += a.Mywmp_PlayStateChange;                
             }
             else
             {
