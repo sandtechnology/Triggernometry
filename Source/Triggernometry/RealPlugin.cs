@@ -514,6 +514,7 @@ namespace Triggernometry
         private string updateDownloadUrl;
         public string pluginName { get; set; }
         public string pluginPath { get; set; }
+        internal Endpoint _ep = null;
         private bool firstevent = true;
         internal bool runningAsAdmin;
         internal string currentZone = null;
@@ -527,6 +528,7 @@ namespace Triggernometry
         internal List<Trigger> ActiveTextTriggers;
         internal List<Trigger> ActiveFFXIVNetworkTriggers;
         internal List<Trigger> ActiveACTTriggers;
+        internal List<Trigger> ActiveEndpointTriggers;
         internal VariableStore sessionvars;
         internal Dictionary<string, Forms.AuraContainerForm> imageauras;
         internal Dictionary<string, Forms.AuraContainerForm> textauras;
@@ -1260,11 +1262,20 @@ namespace Triggernometry
             ActiveTextTriggers = new List<Trigger>();
             ActiveFFXIVNetworkTriggers = new List<Trigger>();
             ActiveACTTriggers = new List<Trigger>();
+            ActiveEndpointTriggers = new List<Trigger>();
             sessionvars = new VariableStore();
             imageauras = new Dictionary<string, Forms.AuraContainerForm>();
             textauras = new Dictionary<string, Forms.AuraContainerForm>();
             ThreadPool.SetMinThreads(10, 10);
             PluginBridges.BridgeFFXIV.OnLogEvent += BridgeFFXIV_OnLogEvent;
+            _ep = new Endpoint();
+            _ep.plug = this;
+            _ep.OnStatusChange += _ep_OnStatusChange;
+        }
+
+        private void _ep_OnStatusChange(Endpoint.StatusEnum newStatus, string statusDesc)
+        {
+            FilteredAddToLog(DebugLevelEnum.Verbose, String.Format("Endpoint ({0}) {1}", newStatus, statusDesc));
         }
 
         private void BridgeFFXIV_OnLogEvent(DebugLevelEnum level, string text)
@@ -1299,6 +1310,12 @@ namespace Triggernometry
                                 ActiveACTTriggers.Add(t);
                             }
                             break;
+                        case Trigger.TriggerSourceEnum.Endpoint:
+                            lock (ActiveEndpointTriggers)
+                            {
+                                ActiveEndpointTriggers.Add(t);
+                            }
+                            break;
                         case Trigger.TriggerSourceEnum.None:
                             break;
                     }
@@ -1330,6 +1347,12 @@ namespace Triggernometry
                             ActiveACTTriggers.Remove(t);
                         }
                         break;
+                    case Trigger.TriggerSourceEnum.Endpoint:
+                        lock (ActiveEndpointTriggers)
+                        {
+                            ActiveEndpointTriggers.Remove(t);
+                        }
+                        break;
                     case Trigger.TriggerSourceEnum.None:
                         break;
                 }
@@ -1351,6 +1374,12 @@ namespace Triggernometry
                         lock (ActiveACTTriggers)
                         {
                             ActiveACTTriggers.Add(t);
+                        }
+                        break;
+                    case Trigger.TriggerSourceEnum.Endpoint:
+                        lock (ActiveEndpointTriggers)
+                        {
+                            ActiveEndpointTriggers.Add(t);
                         }
                         break;
                     case Trigger.TriggerSourceEnum.None:
@@ -1389,6 +1418,15 @@ namespace Triggernometry
                             if (ActiveACTTriggers.Contains(t) == true)
                             {
                                 ActiveACTTriggers.Remove(t);
+                            }
+                        }
+                        break;
+                    case Trigger.TriggerSourceEnum.Endpoint:
+                        lock (ActiveEndpointTriggers)
+                        {
+                            if (ActiveEndpointTriggers.Contains(t) == true)
+                            {
+                                ActiveEndpointTriggers.Remove(t);
                             }
                         }
                         break;
@@ -1432,6 +1470,17 @@ namespace Triggernometry
                         {
                             FilteredAddToLog(DebugLevelEnum.Verbose, I18n.Translate("internal/Plugin/trigaddbook", "Trigger '{0}' added to bookkeeping", t.LogName));
                             ActiveACTTriggers.Add(t);
+                            return;
+                        }
+                    }
+                    break;
+                case Trigger.TriggerSourceEnum.Endpoint:
+                    lock (ActiveEndpointTriggers)
+                    {
+                        if (ActiveEndpointTriggers.Contains(t) == false)
+                        {
+                            FilteredAddToLog(DebugLevelEnum.Verbose, I18n.Translate("internal/Plugin/trigaddbook", "Trigger '{0}' added to bookkeeping", t.LogName));
+                            ActiveEndpointTriggers.Add(t);
                             return;
                         }
                     }
@@ -1489,6 +1538,18 @@ namespace Triggernometry
                             FilteredAddToLog(DebugLevelEnum.Verbose, I18n.Translate("internal/Plugin/trigrembook", "Trigger '{0}' removed from bookkeeping", t.LogName));
                             RemoveAurasFromTrigger(t);
                             ActiveACTTriggers.Remove(t);
+                            return;
+                        }
+                    }
+                    break;
+                case Trigger.TriggerSourceEnum.Endpoint:
+                    lock (ActiveEndpointTriggers)
+                    {
+                        if (ActiveEndpointTriggers.Contains(t) == true)
+                        {
+                            FilteredAddToLog(DebugLevelEnum.Verbose, I18n.Translate("internal/Plugin/trigrembook", "Trigger '{0}' removed from bookkeeping", t.LogName));
+                            RemoveAurasFromTrigger(t);
+                            ActiveEndpointTriggers.Remove(t);
                             return;
                         }
                     }
@@ -2264,6 +2325,10 @@ namespace Triggernometry
                     AllRepositoryUpdates(true);
                 });
                 tx.Start();
+                if (cfg.StartEndpointOnLaunch == true)
+                {
+                    _ep.Start();
+                }
                 isInitialized = true;
             }
             catch (Exception ex)
@@ -2866,6 +2931,12 @@ namespace Triggernometry
                 ui.CloseForms();
             }
             PluginBridges.BridgeFFXIV.UnsubscribeFromNetworkEvents(this);
+            if (_ep != null)
+            {
+                _ep.Stop();
+                _ep.Dispose();
+                _ep = null;
+            }
             if (_obs != null)
             {
                 _obs.Dispose();
@@ -3266,6 +3337,19 @@ namespace Triggernometry
                         }
                     }
                     break;
+                case LogEvent.SourceEnum.Endpoint:
+                    lock (ActiveEndpointTriggers) // verified
+                    {
+                        foreach (Trigger t in ActiveEndpointTriggers)
+                        {
+                            if (t.ZoneBlocked == true && le.TestMode == false)
+                            {
+                                continue;
+                            }
+                            TestTrigger(t, le, Action.TriggerForceTypeEnum.NoSkip);
+                        }
+                    }
+                    break;
             }
             double del = (DateTime.Now - le.Timestamp).TotalMilliseconds;
             if (del > 100.0)
@@ -3308,6 +3392,38 @@ namespace Triggernometry
                 case "OnCombatEnd":
                     LogLineQueuer(data[0], currentZone != null ? currentZone : "", LogEvent.SourceEnum.ACT);
                     break;
+            }
+        }
+
+        public void EndpointReceive(string data)
+        {
+            string detectedZone = currentZone != null ? currentZone : "";
+            try
+            {
+                if (cfg.EventSeparator.Length > 0)
+                {
+                    string[] lines = data.Split(new string[] { cfg.EventSeparator }, StringSplitOptions.RemoveEmptyEntries);
+                    foreach (string line in lines)
+                    {
+                        if (cfg.LogEndpoint == true)
+                        {
+                            FilteredAddToLog(DebugLevelEnum.Verbose, I18n.Translate("internal/Plugin/endpointsplitline", "Split endpoint data: ({0})", line));
+                        }
+                        LogLineQueuer(line, detectedZone, LogEvent.SourceEnum.Endpoint);
+                    }
+                }
+                else
+                {
+                    if (cfg.LogEndpoint == true)
+                    {
+                        FilteredAddToLog(DebugLevelEnum.Verbose, I18n.Translate("internal/Plugin/endpointline", "Endpoint data: ({0})", data));
+                    }
+                    LogLineQueuer(data, detectedZone, LogEvent.SourceEnum.Endpoint);
+                }
+            }
+            catch (Exception ex)
+            {
+                FilteredAddToLog(DebugLevelEnum.Error, I18n.Translate("internal/Plugin/endpointlineprocex", "Exception ({0}) when processing endpoint data ({1}) in zone ({2})", ex.Message, data, detectedZone));
             }
         }
 
