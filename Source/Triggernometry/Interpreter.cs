@@ -275,30 +275,10 @@ namespace Triggernometry
             bool excluded = false;
             foreach (Assembly asm in asms)
             {
-                //Found and exclude Matcha and module genrated by ConfuserEx (otherwise it will break Interpreter)
+                if (asm.FullName.Contains("Cafe.Matcha"))
                 {
-                    if (!foundMatcha && asm.FullName.Contains("Cafe.Matcha"))
-                    {
-                        foundMatcha = true;
-                        continue;
-                    }
-                    if (foundMatcha && !excluded)
-                    {
-                        var asmName = asm.GetName();
-                        if (asmName.Version.ToString().Equals("0.0.0.0") && !asmName.Name.Any(character => character.Equals('.') || character.Equals("-")))
-                        {
-                            excluded = true;
-                            continue;
-                        }
-                        else
-                        {
-                            excludeDepth++;
-                            if (excludeDepth == 5)
-                            {
-                                excluded = true;
-                            }
-                        }
-                    }
+                    foundMatcha = true;
+                    continue;
                 }
                 try
                 {
@@ -323,7 +303,21 @@ namespace Triggernometry
                 }
             }
             _so = _so.AddImports("System");
-            Evaluate("int whee;", null, new Context() { plug = plug });
+            try
+            {
+                Evaluate("int whee;", null, new Context() { plug = plug });
+            }
+            catch (Exception e)
+            {
+                if (foundMatcha)
+                {
+                    throw new Exception("执行C#脚本功能与抹茶不兼容，如需使用，请在高级管理内将抹茶（Cafe.Matcha）置于Triggernometry之后重启ACT", e);
+                }
+                else
+                {
+                    throw new Exception("执行C#脚本功能初始化失败，请在高级管理内将Triggernometry的加载顺序置前一位后重启ACT尝试。", e);
+                }
+            }
         }
 
         public string[] GetBadApis(Context ctx)

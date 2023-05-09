@@ -411,7 +411,7 @@ namespace Triggernometry
                 temp += ", ";
             }
             switch (ActionType)
-            { 
+            {
                 case ActionTypeEnum.Trigger:
                     {
                         Trigger t = ctx.plug.GetTriggerById(_TriggerId, ctx.trig != null ? ctx.trig.Repo : null);
@@ -426,7 +426,7 @@ namespace Triggernometry
                                     temp += I18n.Translate("internal/Action/desctrigcancelall", "cancel all actions queued from all triggers");
                                     break;
                                 case TriggerOpEnum.FireTrigger:
-                                    
+
                                     temp += I18n.Translate("internal/Action/desctrigfire", "fire trigger ({0})", t.Name);
                                     List<string> ex = new List<string>();
                                     if (_TriggerForceType == TriggerForceTypeEnum.SkipAll)
@@ -750,7 +750,7 @@ namespace Triggernometry
                             temp += I18n.Translate("internal/Action/descobsjsonpayload", "Send custom JSON payload to OBS");
                             break;
                     }
-                    break; 
+                    break;
                 case ActionTypeEnum.Variable:
                     switch (_VariableOp)
                     {
@@ -870,7 +870,7 @@ namespace Triggernometry
                         else
                         {
                             temp += I18n.Translate("internal/Action/desclogmessage", "log message ({0})", _LogMessageText);
-                        }                        
+                        }
                     }
                     break;
                 case ActionTypeEnum.WindowMessage:
@@ -932,20 +932,20 @@ namespace Triggernometry
                                 break;
                         }
                         switch (_MouseOpType)
-                            {
-                                case MouseOpEnum.Move:
-                                    temp += I18n.Translate("internal/Action/descmousemove", "Move mouse {0} X: {1} Y: {2}", coorddesc, _MouseX, _MouseY);
-                                    break;
-                                case MouseOpEnum.LeftClick:
-                                    temp += I18n.Translate("internal/Action/descmouselmb", "Move mouse {0} X: {1} Y: {2} and left click", coorddesc, _MouseX, _MouseY);
-                                    break;
-                                case MouseOpEnum.MiddleClick:
-                                    temp += I18n.Translate("internal/Action/descmousemmb", "Move mouse {0} X: {1} Y: {2} and middle click", coorddesc, _MouseX, _MouseY);
-                                    break;
-                                case MouseOpEnum.RightClick:
-                                    temp += I18n.Translate("internal/Action/descmousermb", "Move mouse {0} X: {1} Y: {2} and right click", coorddesc, _MouseX, _MouseY);
-                                    break;
-                            }
+                        {
+                            case MouseOpEnum.Move:
+                                temp += I18n.Translate("internal/Action/descmousemove", "Move mouse {0} X: {1} Y: {2}", coorddesc, _MouseX, _MouseY);
+                                break;
+                            case MouseOpEnum.LeftClick:
+                                temp += I18n.Translate("internal/Action/descmouselmb", "Move mouse {0} X: {1} Y: {2} and left click", coorddesc, _MouseX, _MouseY);
+                                break;
+                            case MouseOpEnum.MiddleClick:
+                                temp += I18n.Translate("internal/Action/descmousemmb", "Move mouse {0} X: {1} Y: {2} and middle click", coorddesc, _MouseX, _MouseY);
+                                break;
+                            case MouseOpEnum.RightClick:
+                                temp += I18n.Translate("internal/Action/descmousermb", "Move mouse {0} X: {1} Y: {2} and right click", coorddesc, _MouseX, _MouseY);
+                                break;
+                        }
                     }
                     break;
                 case ActionTypeEnum.Loop:
@@ -1063,9 +1063,9 @@ namespace Triggernometry
         }
 
         private void ExecutionImplementation(RealPlugin.QueuedAction qa, Context ctx)
-		{
-			try
-			{
+        {
+            try
+            {
                 if ((ctx.force & Action.TriggerForceTypeEnum.SkipConditions) == 0 && ctx.testmode == false)
                 {
                     if (Condition != null && Condition.Enabled == true)
@@ -1080,14 +1080,14 @@ namespace Triggernometry
                 }
                 ctx.PushActionResult(1);
                 AddToLog(ctx, RealPlugin.DebugLevelEnum.Verbose, I18n.Translate("internal/Action/executingaction", "Executing action '{0}' in thread {1}", GetDescription(ctx), System.Threading.Thread.CurrentThread.ManagedThreadId));
-				switch (ActionType)
-				{
+                switch (ActionType)
+                {
                     #region Implementation - Beep
                     case ActionTypeEnum.SystemBeep:
-						{
-							double freq = ctx.EvaluateNumericExpression(ActionContextLogger, ctx, _SystemBeepFreqExpression);
+                        {
+                            double freq = ctx.EvaluateNumericExpression(ActionContextLogger, ctx, _SystemBeepFreqExpression);
                             if (freq < 37.0)
-                            {                                
+                            {
                                 freq = 37.0;
                                 AddToLog(ctx, RealPlugin.DebugLevelEnum.Warning, I18n.Translate("internal/Action/beepfreqlo", "Beep frequency below limit, capping to {0}", freq));
                             }
@@ -1103,8 +1103,8 @@ namespace Triggernometry
                                 AddToLog(ctx, RealPlugin.DebugLevelEnum.Warning, I18n.Translate("internal/Action/beeplengthlo", "Beep length below limit, capping to {0}", len));
                             }
                             Console.Beep((int)Math.Ceiling(freq), (int)Math.Ceiling(len));
-						}
-						break;
+                        }
+                        break;
                     #endregion
                     #region Implementation - Discord webhook
                     case ActionTypeEnum.DiscordWebhook:
@@ -1141,7 +1141,7 @@ namespace Triggernometry
                             string varname = ctx.EvaluateStringExpression(ActionContextLogger, ctx, _DiskFileOpVar);
                             VariableStore vs = (_DiskPersist == false) ? ctx.plug.sessionvars : ctx.plug.cfg.PersistentVariables;
                             if (_DiskFileOp == DiskFileOpEnum.ReadCSVIntoTableVariable || _DiskFileOp == DiskFileOpEnum.ReadIntoListVariable || _DiskFileOp == DiskFileOpEnum.ReadIntoVariable)
-                            {                                
+                            {
                                 Uri u = new Uri(filename);
                                 if (u.IsFile == false)
                                 {
@@ -1255,7 +1255,7 @@ namespace Triggernometry
                                         {
                                             if (vs.Scalar.ContainsKey(varname) == false)
                                             {
-                                               vs.Scalar[varname] = new VariableScalar();
+                                                vs.Scalar[varname] = new VariableScalar();
                                             }
                                             VariableScalar x = vs.Scalar[varname];
                                             x.Value = data;
@@ -1285,10 +1285,17 @@ namespace Triggernometry
                     #endregion
                     #region Implementation - Execute script
                     case ActionTypeEnum.ExecuteScript:
-                        {                            
+                        {
                             string scp = ctx.EvaluateStringExpression(ActionContextLogger, ctx, _ExecScriptExpression);
                             string assy = ctx.EvaluateStringExpression(ActionContextLogger, ctx, _ExecScriptAssembliesExpression);
-                            ctx.plug.scripting.Evaluate(scp, assy, ctx);
+                            if (ctx.plug.scriptingInitException != null)
+                            {
+                                throw ctx.plug.scriptingInitException;
+                            }
+                            if (ctx.plug.scripting != null)
+                            {
+                                ctx.plug.scripting.Evaluate(scp, assy, ctx);
+                            }
                         }
                         break;
                     #endregion
@@ -1735,7 +1742,7 @@ namespace Triggernometry
                                         }
                                         vs = (_ListTargetPersist == false) ? ctx.plug.sessionvars : ctx.plug.cfg.PersistentVariables;
                                         lock (vs.List)
-                                        {                                            
+                                        {
                                             VariableList newvl = GetListVariable(vs, targetname, true);
                                             foreach (Variable x in vl.Values)
                                             {
@@ -1986,7 +1993,7 @@ namespace Triggernometry
                     #endregion
                     #region Implementation - Play sound
                     case ActionTypeEnum.PlaySound:
-						{
+                        {
                             ctx.soundhook(ctx, this);
                         }
                         break;
@@ -1997,10 +2004,10 @@ namespace Triggernometry
                     #endregion
                     #region Implementation - Play speech
                     case ActionTypeEnum.UseTTS:
-						{
+                        {
                             ctx.ttshook(ctx, this);
-						}
-						break;
+                        }
+                        break;
                     #endregion
                     #region Implementation - Repository
                     case ActionTypeEnum.Repository:
@@ -2140,7 +2147,7 @@ namespace Triggernometry
                                             }
                                             else
                                             {
-                                                x.Value = JsonSerializer.Serialize<object[]>(result.ToArray());                                                
+                                                x.Value = JsonSerializer.Serialize<object[]>(result.ToArray());
                                             }
                                             if (ctx.trig != null)
                                             {
@@ -2388,7 +2395,7 @@ namespace Triggernometry
                                         {
                                             VariableTable vt = GetTableVariable(vs, sourcename, true);
                                             int mx = Math.Max(x, vt.Width);
-                                            int my = Math.Max(y, vt.Height);                                            
+                                            int my = Math.Max(y, vt.Height);
                                             if (mx != vt.Width || my != vt.Height)
                                             {
                                                 vt.Resize(mx, my);
@@ -2420,7 +2427,7 @@ namespace Triggernometry
                     #endregion
                     #region Implementation - Trigger operation
                     case ActionTypeEnum.Trigger:
-						{
+                        {
                             Trigger t = ctx.plug.GetTriggerById(_TriggerId, ctx.trig != null ? ctx.trig.Repo : null);
                             if (t != null)
                             {
@@ -2504,7 +2511,7 @@ namespace Triggernometry
                                     AddToLog(ctx, RealPlugin.DebugLevelEnum.Warning, I18n.Translate("internal/Action/notrigiderror", "No trigger id, and op is not cancel all actions, unexpected"));
                                 }
                             }
-						}
+                        }
                         break;
                     #endregion
                     #region Implementation - Window message
@@ -2607,17 +2614,17 @@ namespace Triggernometry
                         #endregion
                 }
             }
-			catch (Exception ex)
-			{
+            catch (Exception ex)
+            {
                 AddToLog(ctx, RealPlugin.DebugLevelEnum.Error, I18n.Translate("internal/Action/exception", "Exception: {0}", ex.Message));
             }
-            ContinueChain:
+        ContinueChain:
             if (NextAction != null)
             {
                 DateTime dt = DateTime.Now.AddMilliseconds(ctx.EvaluateNumericExpression(ActionContextLogger, ctx, NextAction._ExecutionDelayExpression));
                 ctx.plug.QueueAction(ctx, ctx.trig, qa != null ? qa.mutex : null, NextAction, dt);
             }
-		}
+        }
 
         internal void Mywmp_PlayStateChange(int NewState)
         {
@@ -2630,9 +2637,9 @@ namespace Triggernometry
             {
                 do
                 {
-                    wmp = null;                    
+                    wmp = null;
                     foreach (WindowsMediaPlayer x in players)
-                    {                        
+                    {
                         if (x.playState == WMPPlayState.wmppsStopped)
                         {
                             wmp = x;
@@ -2652,7 +2659,7 @@ namespace Triggernometry
             WindowsMediaPlayer wmp = (WindowsMediaPlayer)pMediaObject;
             lock (players) // verified
             {
-                players.Remove(wmp);                
+                players.Remove(wmp);
             }
         }
 

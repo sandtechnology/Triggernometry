@@ -539,6 +539,7 @@ namespace Triggernometry
         internal int MinX = int.MaxValue, MinY = int.MaxValue, MaxX = int.MinValue, MaxY = int.MinValue;
         internal Dictionary<string, MutexInformation> mutexes = new Dictionary<string, MutexInformation>();
         internal Interpreter scripting;
+        internal Exception scriptingInitException;
         internal Dictionary<string, object> scriptingStorage = new Dictionary<string, object>();
         private List<Configuration.APIUsage> DefaultAPIUsages = new List<Configuration.APIUsage>();
 
@@ -2188,7 +2189,14 @@ namespace Triggernometry
                 AuraUpdateThread.Start();
                 _obs = new ObsController();
                 exwhere = I18n.Translate("internal/Plugin/iniscripting", "setting up scripting - try changing the plugin load order in ACT");
-                scripting = new Interpreter(this);
+                try
+                {
+                    scripting = new Interpreter(this);
+                }
+                catch (Exception e)
+                {
+                    scriptingInitException = e;
+                }
                 pluginStatusText.Text = I18n.Translate("internal/Plugin/iniready", "Ready");
                 FilteredAddToLog(DebugLevelEnum.Info, I18n.Translate("internal/Plugin/inited", "Initialized"));
                 Task tx = new Task(() =>
